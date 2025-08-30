@@ -1,0 +1,24 @@
+# Old TypeScript system (replaced by ralphio.js)
+src/
+dist/
+*.test.js
+*.test.ts
+__tests__/
+tsconfig.json
+jest.config.js
+
+# Development files  
+.agent/
+.claude/
+node_modules/
+
+# Documentation that shouldn't be in package
+planning.md
+docs/
+
+# Git
+.git/
+.gitignore
+
+CLAUDE.md
+notplanning.md

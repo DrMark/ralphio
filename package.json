@@ -1,0 +1,47 @@
+{
+  "name": "ralphio",
+  "version": "0.3.1",
+  "description": "Minimal AI agent orchestrator inspired by Ralph Wiggum Technique - one task per loop, focus on engine not scaffolding",
+  "main": "ralphio.js",
+  "bin": {
+    "ralphio": "ralphio.js"
+  },
+  "scripts": {
+    "build": "echo 'No build needed - using ralphio.js directly'",
+    "start": "node ralphio.js",
+    "test": "echo 'Tests removed - minimal rewrite uses proven CLAUDE.md prompt'"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "orchestrator",
+    "automation",
+    "claude",
+    "typescript",
+    "task-management"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "RALPHIO Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/onorbumbum/ralphio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onorbumbum/ralphio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/onorbumbum/ralphio/issues"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.90",
+    "ralphio": "^0.3.0"
+  },
+  "files": [
+    "ralphio.js",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "src/prompts/*.md"
+  ]
+}
