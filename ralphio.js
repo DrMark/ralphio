@@ -31,19 +31,19 @@ function getLogFilePath() {
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
   const logsDir = './.agent/logs';
-  
+
   // Ensure logs directory exists
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
   }
-  
+
   return path.join(logsDir, `ralphio_${dateStr}.log`);
 }
 
 function logToFile(message, type = 'INFO') {
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] [${type}] ${message}\n`;
-  
+
   try {
     fs.appendFileSync(getLogFilePath(), logEntry);
   } catch (error) {
@@ -54,7 +54,7 @@ function logToFile(message, type = 'INFO') {
 function logOutput(text, type = 'OUTPUT') {
   // Write to console
   console.log(text);
-  
+
   // Also log to file (strip ANSI colors for clean file logs)
   const cleanText = text.replace(/\u001b\[[0-9;]*m/g, '');
   logToFile(cleanText, type);
@@ -75,11 +75,11 @@ function hasUnfinishedTasks() {
         return false;
       }
     }
-    
+
     const planningContent = fs.readFileSync(planningPath, 'utf8');
     // Look for unchecked tasks: - [ ]
     const uncheckedTasks = planningContent.match(/^[ \t]*- \[ \]/gm);
-    
+
     if (uncheckedTasks && uncheckedTasks.length > 0) {
       logToFile(`Found ${uncheckedTasks.length} unchecked tasks remaining in ${planningPath}`, 'INFO');
       return true;
@@ -146,25 +146,25 @@ function printVersion() {
 
 async function initializeAgentStructure() {
   const agentDir = './.agent';
-  
+
   try {
     // Check if .agent directory already exists
     if (fs.existsSync(agentDir)) {
       console.log('⚠️  .agent/ directory already exists. Skipping initialization...');
       return;
     }
-    
+
     console.log('🚀 Initializing RALPHIO agent structure...');
-    
+
     // Create .agent directory
     fs.mkdirSync(agentDir, { recursive: true });
     console.log('✅ Created .agent/ directory');
-    
+
     // Create subdirectories
     fs.mkdirSync(path.join(agentDir, 'artifacts', 'loops'), { recursive: true });
     fs.mkdirSync(path.join(agentDir, 'logs'), { recursive: true });
     console.log('✅ Created subdirectories: artifacts/loops, logs');
-    
+
     // Create agent.config.json
     const configContent = {
       "paths": {
@@ -181,12 +181,12 @@ async function initializeAgentStructure() {
       JSON.stringify(configContent, null, 2)
     );
     console.log('✅ Created agent.config.json with default paths');
-    
+
     // Create memory.md template
     const memoryTemplate = `# MEMORY
 
 ## Stack Discovery
-- **Stack**: [To be discovered on first run]  
+- **Stack**: [To be discovered on first run]
 - **Build Command**: [To be discovered]
 - **Type Check**: [To be discovered]
 
@@ -199,7 +199,7 @@ async function initializeAgentStructure() {
       memoryTemplate
     );
     console.log('✅ Created memory.md template');
-    
+
     // Create planning.md template (main task file)
     const planTemplate = `# Planning - Sample Tasks
 
@@ -219,14 +219,14 @@ async function initializeAgentStructure() {
       planTemplate
     );
     console.log('✅ Created planning.md with sample tasks');
-    
+
     // Create prompt.md by reading from the external file
     // Try multiple possible locations for the prompt file
     const possiblePaths = [
       path.join(__dirname, 'src', 'prompts', 'system_prompt_tdd.md'),
       path.join(process.cwd(), 'node_modules', 'ralphio', 'src', 'prompts', 'system_prompt_tdd.md')
     ];
-    
+
     // Try to find via require.resolve if this is an installed package
     try {
       const ralphioPath = require.resolve('ralphio');
@@ -234,10 +234,10 @@ async function initializeAgentStructure() {
     } catch (e) {
       // Not installed as package, that's ok
     }
-    
+
     let promptTemplate = '';
     let foundPath = null;
-    
+
     for (const promptPath of possiblePaths) {
       try {
         if (fs.existsSync(promptPath)) {
@@ -250,7 +250,7 @@ async function initializeAgentStructure() {
         // Try next path
       }
     }
-    
+
     if (!foundPath) {
       // Fallback to a minimal but functional template if file doesn't exist
       console.warn('⚠️  system_prompt_tdd.md not found in any expected location');
@@ -268,7 +268,7 @@ If you do multiple tasks, you have FAILED.
 - Read .agent/memory.md
 - This contains learnings from previous loops - don't repeat mistakes!
 
-### Step 1: Read the plan AND EVALUATE TASK SIZE  
+### Step 1: Read the plan AND EVALUATE TASK SIZE
 - Find the FIRST task in .agent/planning.md marked with \`- [ ]\`
 - Remember the EXACT text of this task
 - That is your ONLY task for this loop
@@ -309,19 +309,19 @@ Use Edit tool to mark task complete in .agent/planning.md
 
 [Note: Full prompt template not embedded - please ensure ralphio is properly installed]`;
     }
-    
+
     fs.writeFileSync(
       path.join(agentDir, 'prompt.md'),
       promptTemplate
     );
     console.log('✅ Created prompt.md with RALPHIO instructions');
-    
+
     console.log('\n🎉 RALPHIO initialization complete!');
     console.log('📝 Next steps:');
     console.log('   1. Edit {projectFolder}/.agent/planning.md to add your tasks');
     console.log('   2. Run: ralphio --once (single task)');
     console.log('   3. Or run: ralphio --until-success (all tasks)');
-    
+
   } catch (error) {
     console.error('❌ Failed to initialize agent structure:', error.message);
     process.exit(1);
@@ -337,27 +337,27 @@ async function parsePRD(prdFile) {
       console.error(`❌ PRD file not found: ${prdFile}`);
       return false;
     }
-    
+
     // Ensure .agent structure exists
     if (!fs.existsSync('.agent/planning.md')) {
       console.error('❌ No .agent/planning.md found. Run "ralphio init" first.');
       return false;
     }
-    
+
     // Read PRD content
     const prdContent = fs.readFileSync(prdFile, 'utf8');
     console.log(`📖 Reading PRD from ${prdFile}...`);
-    
+
     // Read current planning.md to check existing tasks
     const currentPlanning = fs.readFileSync('.agent/planning.md', 'utf8');
-    
+
     // Read the parse PRD prompt
     // Try multiple possible locations for the prompt file
     const possiblePrdPaths = [
       path.join(__dirname, 'src', 'prompts', 'parse_prd_tdd_prompt.md'),
       path.join(process.cwd(), 'node_modules', 'ralphio', 'src', 'prompts', 'parse_prd_tdd_prompt.md')
     ];
-    
+
     // Try to find via require.resolve if this is an installed package
     try {
       const ralphioPath = require.resolve('ralphio');
@@ -365,10 +365,10 @@ async function parsePRD(prdFile) {
     } catch (e) {
       // Not installed as package, that's ok
     }
-    
+
     let parsePrompt = '';
     let foundPrdPath = null;
-    
+
     for (const promptPath of possiblePrdPaths) {
       try {
         if (fs.existsSync(promptPath)) {
@@ -381,7 +381,7 @@ async function parsePRD(prdFile) {
         // Try next path
       }
     }
-    
+
     if (!foundPrdPath) {
       // Fallback inline prompt if file doesn't exist
       console.warn('⚠️  parse_prd_tdd_prompt.md not found in any expected location');
@@ -400,12 +400,12 @@ ${prdContent}
 
 Generate only the task list in markdown format, nothing else.`;
     }
-    
+
     // Build the full prompt - ensure it asks for ONLY the task list
     const fullPrompt = parsePrompt + '\n\nPRD Content:\n' + prdContent + '\n\nCurrent planning.md (for context - avoid duplicates):\n' + currentPlanning + '\n\nIMPORTANT: Output ONLY the task list in markdown format with story points. No explanations, no preamble, no tool calls.';
-    
+
     console.log('🧠 Analyzing PRD and generating tasks...');
-    
+
     // Call Claude to parse PRD
     let generatedTasks = '';
     for await (const message of query({
@@ -429,19 +429,19 @@ Generate only the task list in markdown format, nothing else.`;
         }
       }
     }
-    
+
     if (!generatedTasks) {
       console.error('❌ Failed to generate tasks from PRD');
       return false;
     }
-    
+
     // Append tasks to planning.md
     const separator = '\n\n## Tasks from PRD (' + new Date().toISOString().split('T')[0] + ')\n';
     fs.appendFileSync('.agent/planning.md', separator + generatedTasks + '\n');
-    
+
     console.log('✅ Tasks successfully added to .agent/planning.md');
     console.log('📝 Review the tasks and run "ralphio --once" or "ralphio --until-success" to start implementation');
-    
+
     return true;
   } catch (error) {
     console.error('❌ Error parsing PRD:', error.message);
@@ -453,10 +453,10 @@ Generate only the task list in markdown format, nothing else.`;
 // Simple auto-commit with task info
 function autoCommitChanges(taskDescription, sessionId) {
   let commitMsg = ''; // Define in function scope for error handler
-  
+
   try {
     const { execSync } = require('child_process');
-    
+
     // Check if there are changes to commit
     const status = execSync('git status --porcelain', { encoding: 'utf8' });
     if (!status.trim()) {
@@ -464,17 +464,17 @@ function autoCommitChanges(taskDescription, sessionId) {
       logToFile('No changes to commit - agent likely already committed', 'INFO');
       return true;
     }
-    
+
     // Build safe commit message
     const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, ''); // HHMMSS
     const session = sessionId ? sessionId.slice(-6) : 'nosess';
-    
+
     // Sanitize task - keep it simple and safe for shell, but smart truncation
     let task = (taskDescription || 'task')
       .replace(/[^a-zA-Z0-9 \-_]/g, '') // Only safe chars first
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim();
-    
+
     // Smart truncation - don't cut words
     if (task.length > 50) {
       task = task.substring(0, 50);
@@ -484,20 +484,20 @@ function autoCommitChanges(taskDescription, sessionId) {
       }
     }
     task = task.trim() || 'task';
-    
+
     // Simple format that always works
     commitMsg = `RALPHIO: ${task} [${session}-${timestamp}]`;
-    
+
     // Debug logging
     console.log(`\n📝 Attempting auto-commit:`);
     console.log(`   Task: "${taskDescription}" -> "${task}"`);
     console.log(`   Session: ${sessionId || 'none'} -> ${session}`);
     console.log(`   Message: "${commitMsg}"`);
     logToFile(`Commit attempt - Original: "${taskDescription}", Sanitized: "${task}", Full: "${commitMsg}"`, 'DEBUG');
-    
+
     // Stage changes and verify something is actually staged
     execSync('git add -A', { encoding: 'utf8' });
-    
+
     // Double-check: are there actually staged changes?
     const stagedChanges = execSync('git diff --cached --stat', { encoding: 'utf8' });
     if (!stagedChanges.trim()) {
@@ -506,13 +506,13 @@ function autoCommitChanges(taskDescription, sessionId) {
       logToFile('No staged changes - agent likely committed or changes were reverted', 'INFO');
       return true;
     }
-    
+
     // Now commit
     execSync(`git commit -m "${commitMsg}"`, { encoding: 'utf8' });
-    
+
     console.log(`✅ AUTO-COMMIT SUCCESS: ${commitMsg}`);
     logToFile(`Auto-committed: ${commitMsg}`, 'SUCCESS');
-    
+
     return true;
   } catch (error) {
     // If it's just "nothing to commit", that's fine
@@ -520,17 +520,17 @@ function autoCommitChanges(taskDescription, sessionId) {
       logToFile('Nothing to commit', 'INFO');
       return true;
     }
-    
+
     // Detailed error debugging
     console.error(`\n⚠️ Auto-commit failed!`);
     console.error(`   Error: ${error.message}`);
     console.error(`   Stderr: ${error.stderr || 'none'}`);
     console.error(`   Status: ${error.status || 'unknown'}`);
     console.error(`   Command: git commit -m "${commitMsg}"`);
-    
+
     logToFile(`Auto-commit failed: ${error.message}`, 'ERROR');
     logToFile(`Error details - stderr: ${error.stderr}, status: ${error.status}`, 'DEBUG');
-    
+
     // Try to show git status for debugging
     try {
       const debugStatus = execSync('git status --short', { encoding: 'utf8' });
@@ -538,7 +538,7 @@ function autoCommitChanges(taskDescription, sessionId) {
     } catch (e) {
       // Ignore if this fails too
     }
-    
+
     return false;
   }
 }
@@ -546,17 +546,17 @@ function autoCommitChanges(taskDescription, sessionId) {
 async function runTask() {
   const timeoutMs = getTimeout(); // Move to function scope
   let sessionId = null; // Track session for this loop
-  
+
   try {
     // Read all critical files to ensure full context
     const promptContent = fs.readFileSync('.agent/prompt.md', 'utf8');
     const memoryContent = fs.readFileSync('.agent/memory.md', 'utf8');
     const planningContent = fs.readFileSync('.agent/planning.md', 'utf8');
-    
+
     // Extract current task for commit message
     const taskMatch = planningContent.match(/^[ \t]*- \[ \] (.+)$/m);
     const currentTask = taskMatch ? taskMatch[1] : 'task';
-    
+
     // Inject content for immediate context, but agent still edits the actual files
     const fullPrompt = `
 
@@ -578,18 +578,18 @@ IMPORTANT: You must still use Edit tool on the actual files:
 - To mark task complete: Edit {projectFolder}/.agent/planning.md
 - To update memory: Edit {projectFolder}/.agent/memory.md
 Do NOT try to edit the content shown above - edit the actual files.`;
-    
+
     const message = '🔄 Starting task execution...';
     console.log(message);
     logToFile(message, 'INFO');
-    
+
     const queryPromise = (async () => {
       let result = '';
       for await (const message of query({
         prompt: fullPrompt,
         options: {
           permissionMode: 'bypassPermissions',
-          maxTurns: 50,
+          maxTurns: 200,
           pathToClaudeCodeExecutable: CLAUDE_EXEC
         }
       })) {
@@ -604,8 +604,8 @@ Do NOT try to edit the content shown above - edit the actual files.`;
             for (const block of message.message.content) {
               if (block.type === "text") {
                 const text = block.text;
-                
-                // Split into lines and output each line separately  
+
+                // Split into lines and output each line separately
                 const lines = text.split('\n');
                 for (const line of lines) {
                   if (line.trim()) {
@@ -632,7 +632,7 @@ Do NOT try to edit the content shown above - edit the actual files.`;
           const completionMessage = `\n✅ Task execution completed. Session: ${sessionId}`;
           console.log(completionMessage);
           logToFile(`Task completed in session: ${sessionId}`, 'INFO');
-          
+
           // Save session ID to memory for potential resume
           if (sessionId) {
             fs.appendFileSync('.agent/memory.md', `\n<!-- Last session: ${sessionId} -->\n`);
@@ -644,16 +644,16 @@ Do NOT try to edit the content shown above - edit the actual files.`;
       }
       return result;
     })();
-    
+
     const result = await withTimeout(queryPromise, timeoutMs);
-    
+
     // Simple auto-commit: just commit if there are changes
     const committed = autoCommitChanges(currentTask, sessionId);
     if (!committed) {
       console.warn('⚠️ Auto-commit failed, but task completed successfully');
       logToFile('Warning: Auto-commit failed but continuing', 'WARNING');
     }
-    
+
     return result;
   } catch (error) {
     let errorMessage;
@@ -673,7 +673,7 @@ async function runUntilSuccess() {
   let consecutiveFailures = 0;
   const maxIterations = 50;
   const maxConsecutiveFailures = 3;
-  
+
   // Initial check - if no tasks, don't start
   if (!hasUnfinishedTasks()) {
     const noTasksMessage = '🎉 ALL TASKS ALREADY COMPLETED! Nothing to do.';
@@ -681,7 +681,7 @@ async function runUntilSuccess() {
     logToFile('ALL TASKS ALREADY COMPLETED - NO WORK NEEDED', 'COMPLETE');
     process.exit(0);
   }
-  
+
   while (iteration <= maxIterations) {
     // Check if there are any tasks left to do
     if (!hasUnfinishedTasks()) {
@@ -690,28 +690,28 @@ async function runUntilSuccess() {
       logToFile('ALL TASKS COMPLETED - TERMINATING SUCCESSFULLY', 'COMPLETE');
       process.exit(0);
     }
-    
+
     const separator = `${'='.repeat(60)}`;
     const iterationMessage = `🔄 ITERATION ${iteration}/${maxIterations} - Starting task execution...`;
-    
+
     console.log(`\n${separator}`);
     console.log(iterationMessage);
     console.log(`${separator}\n`);
-    
+
     logToFile(`ITERATION ${iteration}/${maxIterations} - Starting task execution...`, 'INFO');
-    
+
     try {
       await runTask();
       const successMessage = `\n✅ ITERATION ${iteration} COMPLETED SUCCESSFULLY`;
       const resetMessage = `   Consecutive failures: 0 (reset)`;
       console.log(successMessage);
       console.log(resetMessage);
-      
+
       logToFile(`ITERATION ${iteration} COMPLETED SUCCESSFULLY`, 'SUCCESS');
       logToFile('Consecutive failures: 0 (reset)', 'INFO');
       consecutiveFailures = 0; // Reset on success
       iteration++;
-      
+
       // Small delay between iterations for readability
       if (iteration <= maxIterations) {
         console.log('\n⏳ Preparing next iteration...\n');
@@ -722,15 +722,15 @@ async function runUntilSuccess() {
       const failMessage = `\n❌ ITERATION ${iteration} FAILED`;
       const failureCount = `   Consecutive failures: ${consecutiveFailures}/${maxConsecutiveFailures}`;
       const errorDetail = `   Error: ${error.message}`;
-      
+
       console.log(failMessage);
       console.log(failureCount);
       console.log(errorDetail);
-      
+
       logToFile(`ITERATION ${iteration} FAILED`, 'FAILURE');
       logToFile(`Consecutive failures: ${consecutiveFailures}/${maxConsecutiveFailures}`, 'INFO');
       logToFile(`Error: ${error.message}`, 'ERROR');
-      
+
       if (consecutiveFailures >= maxConsecutiveFailures) {
         const terminationMessage = '\n💥 TERMINATION: 3 consecutive failures reached. System appears unstable.';
         console.log(terminationMessage);
@@ -738,7 +738,7 @@ async function runUntilSuccess() {
         process.exit(1);
       }
       iteration++;
-      
+
       // Small delay before retry
       if (iteration <= maxIterations) {
         console.log('\n⏳ Retrying next iteration...\n');
@@ -746,7 +746,7 @@ async function runUntilSuccess() {
       }
     }
   }
-  
+
   const maxIterationsMessage = `🛑 TERMINATION: Reached maximum ${maxIterations} iterations`;
   console.log(maxIterationsMessage);
   logToFile(maxIterationsMessage, 'TERMINATION');
@@ -774,12 +774,12 @@ if (args.includes('init')) {
 if (args.includes('--parse-prd')) {
   const prdIndex = args.indexOf('--parse-prd');
   const prdFile = args[prdIndex + 1];
-  
+
   if (!prdFile) {
     console.error('❌ Please provide a PRD file: ralphio --parse-prd <file>');
     process.exit(1);
   }
-  
+
   parsePRD(prdFile)
     .then((success) => {
       process.exit(success ? 0 : 1);
@@ -795,7 +795,7 @@ if (args.includes('--once')) {
   const startMessage = '🧠 RALPHIO starting single iteration...';
   console.log(startMessage);
   logToFile(startMessage, 'START');
-  
+
   runTask()
     .then(() => {
       logToFile('RALPHIO single iteration completed successfully', 'COMPLETE');
@@ -812,7 +812,7 @@ if (args.includes('--until-success')) {
   const multiStartMessage = '🧠 RALPHIO starting multi-loop execution until success...';
   console.log(multiStartMessage);
   logToFile(multiStartMessage, 'START');
-  
+
   runUntilSuccess();
   return;
 }
