@@ -4,6 +4,28 @@ const fs = require('fs');
 const path = require('path');
 const { query } = require('@anthropic-ai/claude-code');
 
+// Resolve Claude Code CLI executable
+const CLAUDE_EXEC = (() => {
+  if (process.env.CLAUDE_CODE_EXECUTABLE) return process.env.CLAUDE_CODE_EXECUTABLE;
+  if (process.env.CLAUDE_PATH) return process.env.CLAUDE_PATH;
+  try {
+    // Preferred: package entrypoint
+    return require.resolve('@anthropic-ai/claude-code/entrypoints/cli.js');
+  } catch (e1) {
+    try {
+      // Fallback: older package name
+      return require.resolve('@anthropic-ai/entrypoints/cli.js');
+    } catch (e2) {
+      return null;
+    }
+  }
+})();
+
+if (!CLAUDE_EXEC) {
+  console.error('❌ Claude Code CLI not found. Install @anthropic-ai/claude-code or set CLAUDE_CODE_EXECUTABLE to the Node CLI path (…/@anthropic-ai/claude-code/entrypoints/cli.js)');
+  process.exit(1);
+}
+
 // Logging functionality
 function getLogFilePath() {
   const now = new Date();
@@ -390,7 +412,8 @@ Generate only the task list in markdown format, nothing else.`;
       prompt: fullPrompt,
       options: {
         permissionMode: 'bypassPermissions',
-        maxTurns: 1
+        maxTurns: 1,
+        pathToClaudeCodeExecutable: CLAUDE_EXEC
       }
     })) {
       if (message.type === "assistant" && message.message.content) {
@@ -566,7 +589,8 @@ Do NOT try to edit the content shown above - edit the actual files.`;
         prompt: fullPrompt,
         options: {
           permissionMode: 'bypassPermissions',
-          maxTurns: 50
+          maxTurns: 50,
+          pathToClaudeCodeExecutable: CLAUDE_EXEC
         }
       })) {
         // Capture session ID from init message
